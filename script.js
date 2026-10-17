@@ -74,6 +74,14 @@
       pctEl.textContent = p + '%';
     }, 50);
 
+    // ставим src и ждём настоящего события загрузки (или ошибки)
+    const setSrc = (im, url) => new Promise(resolve => {
+      const done = () => { im.removeEventListener('load', done); im.removeEventListener('error', done); resolve(); };
+      im.addEventListener('load', done);
+      im.addEventListener('error', done);
+      im.src = url;
+      if (im.complete && im.naturalWidth) done();
+    });
     async function loadImg(im, i) {
       const src = im.dataset.src;
       try {
@@ -87,12 +95,13 @@
           if (done) break;
           parts.push(value); got[i] += value.length; recalc();
         }
-        im.src = URL.createObjectURL(new Blob(parts, { type: 'image/png' }));
+        await setSrc(im, URL.createObjectURL(new Blob(parts, { type: 'image/png' })));
       } catch {
-        im.src = src; // например, открыто как файл — грузим обычным способом
+        // например, открыто как файл — грузим обычным способом
       }
-      const ready = im.decode ? im.decode().catch(() => {}) : new Promise(r => { im.onload = im.onerror = r; });
-      await Promise.race([ready, sleep(3000)]); // decode может ждать отрисовки — не зависаем на нём
+      if (!im.naturalWidth) await setSrc(im, src);
+      // декодируем заранее, чтобы картинка не «проявлялась» уже после показа
+      if (im.decode) await Promise.race([im.decode().catch(() => {}), sleep(4000)]);
       got[i] = total[i]; recalc();
     }
     const fonts = document.fonts
@@ -113,6 +122,8 @@
       clearInterval(barTimer);
       barEl.style.width = '100%';
       pctEl.textContent = '100%';
+      // два кадра, чтобы фон точно был нарисован под прелоадером
+      await Promise.race([new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))), sleep(300)]);
       box.classList.add('is-done');
       document.body.classList.remove('loading');
       setTimeout(() => box.remove(), 600);

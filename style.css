@@ -598,7 +598,10 @@ body.show-ref .glare, body.show-ref .crt, body.show-ref canvas { display: none; 
 body.show-ref .panel__title, body.show-ref .panel__text, body.show-ref .wish span, body.show-ref .logo { animation: none !important; opacity: 1 !important; }
 
 /* ---------- Прелоадер ---------- */
-body.loading #viewport, body.loading .hint { display: none; }
+/* пока грузимся, открытка уже отрисована под прелоадером (так фон успевает декодироваться),
+   но все её анимации стоят на паузе и стартуют с нуля после показа */
+body.loading .hint { display: none; }
+body.loading #stage *, body.loading #stage *::before, body.loading #stage *::after { animation-play-state: paused !important; }
 
 #loader {
   position: fixed;
@@ -608,6 +611,7 @@ body.loading #viewport, body.loading .hint { display: none; }
   place-items: center;
   padding: 16px;
   font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  background: radial-gradient(ellipse at 50% 40%, #1b1220 0%, var(--night) 70%);
   transition: opacity .5s ease, transform .5s ease;
 }
 #loader.is-done { opacity: 0; transform: scale(1.06); pointer-events: none; }
