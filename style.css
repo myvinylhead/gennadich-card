@@ -729,3 +729,14 @@ body.loading #stage *, body.loading #stage *::before, body.loading #stage *::aft
 .zoom-ui button:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
 .zoom-ui [data-zoom="reset"] { font-size: 17px; }
 body:not(.is-zoomed) .zoom-ui [data-zoom="reset"] { opacity: .45; }
+
+/* ---------- Кнопка звука ---------- */
+.sound-btn { display: grid; place-items: center; margin-bottom: 6px; }
+.sound-btn svg { width: 22px; height: 22px; }
+.sound-btn .sound-off { display: none; }
+.sound-btn.is-muted { color: rgba(236,231,220,.55); }
+.sound-btn.is-muted .sound-on { display: none; }
+.sound-btn.is-muted .sound-off { display: inline; }
+/* музыка ждёт первого касания — кнопка мягко зовёт */
+.sound-btn.is-waiting { animation: soundCall 1.6s ease-in-out infinite; }
+@keyframes soundCall { 50% { box-shadow: 0 0 22px rgba(255,160,50,.8); } }

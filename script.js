@@ -17,6 +17,69 @@
     stage.appendChild(ref);
   }
 
+  /* ---------- Музыка ---------- */
+  // обычный <audio loop>: работает везде; на стыке петли возможна крошечная пауза
+  const music = (() => {
+    const btn = document.getElementById('soundBtn');
+    const audio = new Audio();
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.volume = .6;
+    audio.setAttribute('playsinline', '');
+    audio.src = 'assets/music.mp3';
+    let muted = false;
+    try { muted = localStorage.getItem('card-muted') === '1'; } catch {}
+
+    const playing = () => !audio.paused;
+    function paint() {
+      btn.classList.toggle('is-muted', muted);
+      btn.setAttribute('aria-pressed', String(!muted));
+      btn.setAttribute('aria-label', muted ? 'Включить музыку' : 'Выключить музыку');
+      btn.classList.toggle('is-waiting', !muted && !playing());
+    }
+    ['play', 'playing', 'pause'].forEach(t => audio.addEventListener(t, paint));
+
+    // для прелоадера: ждём, пока трек можно проиграть целиком (но не дольше 8 с)
+    function load() {
+      return new Promise(resolve => {
+        if (audio.readyState >= 4) return resolve();
+        const done = () => resolve();
+        audio.addEventListener('canplaythrough', done, { once: true });
+        audio.addEventListener('error', done, { once: true });
+        setTimeout(done, 8000);
+        audio.load();
+      });
+    }
+    function play() {
+      if (muted) return paint();
+      const p = audio.play();
+      if (p) p.catch(() => paint()); // браузер не разрешил без касания — ждём касания
+    }
+    function toggle() {
+      muted = !muted;
+      try { localStorage.setItem('card-muted', muted ? '1' : '0'); } catch {}
+      if (muted) audio.pause(); else play();
+      paint();
+    }
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      // музыка ещё не заиграла — кнопка её запускает, а не выключает
+      if (!muted && !playing()) return play();
+      toggle();
+    });
+    // первое касание где угодно включает звук (так требуют браузеры)
+    const unlock = e => { if (!btn.contains(e.target) && !muted && !playing()) play(); };
+    ['pointerdown', 'touchend', 'keydown', 'click'].forEach(t => addEventListener(t, unlock, { passive: true }));
+    // свернули вкладку — тишина
+    let wasPlaying = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { wasPlaying = playing(); audio.pause(); }
+      else if (wasPlaying && !muted) play();
+    });
+    paint();
+    return { load, play };
+  })();
+
   /* ---------- Прелоадер ---------- */
   const loaderMsgs = [
     'Дискомбобулирую поздравление…',
@@ -110,7 +173,7 @@
       : Promise.resolve();
     fonts.then(() => { fontsDone = true; recalc(); });
 
-    const loaded = Promise.all([...imgs.map(loadImg), fonts]);
+    const loaded = Promise.all([...imgs.map(loadImg), fonts, music.load()]);
     const minTime = sleep(1800);                 // чтобы успеть прочитать шутку
     const maxTime = sleep(20000);                // если сеть совсем плохая — показываем как есть
     return Promise.race([Promise.all([loaded, minTime]), maxTime]).then(async () => {
@@ -507,6 +570,7 @@
   runLoader().then(() => {
     fit();
     fitLines();
+    music.play();
     document.fonts?.ready.then(fitLines);
     setTimeout(fitLines, 1500);
     if (!reduced) {
