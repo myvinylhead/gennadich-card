@@ -138,17 +138,18 @@
     if (debug && qs.has('z')) {
       const z = +qs.get('z');
       root.style.setProperty('--s', z);
-      document.getElementById('viewport').style.placeItems = 'start';
+      document.getElementById('zoom').style.placeItems = 'start';
       tilt.style.transition = 'none';
       tilt.style.transform = `translate(${-(+qs.get('x') || 0) * z}px, ${-(+qs.get('y') || 0) * z}px)`;
     }
   }
-  addEventListener('resize', fit);
+  addEventListener('resize', () => { fit(); zoomFix(); });
   fit();
 
   /* ---------- 3D-наклон и блик за курсором ---------- */
   // px, py — положение «взгляда» от 0 до 1, центр — 0.5
   function applyTilt(px, py) {
+    if (zoom.z > 1.01) return; // в приближении открытка не качается
     tilt.style.transform = `rotateY(${(px - .5) * 8}deg) rotateX(${(.5 - py) * 6}deg)`;
     stage.style.setProperty('--gx', px * 100 + '%');
     stage.style.setProperty('--gy', py * 100 + '%');
@@ -161,6 +162,124 @@
     addEventListener('pointermove', e => onMove(e.clientX, e.clientY));
     document.addEventListener('pointerleave', () => { tilt.style.transform = ''; });
   }
+
+  /* ---------- Зум: щипок, колёсико, двойной тап, перетаскивание ---------- */
+  const zoomEl = document.getElementById('zoom');
+  const viewport = document.getElementById('viewport');
+  const ZMIN = 1, ZMAX = 4;
+  const zoom = { z: 1, x: 0, y: 0 };
+  const zclamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // не даём открытке уехать за край: если она меньше экрана — центрируем
+  function zoomFix() {
+    const vw = innerWidth, vh = innerHeight;
+    const L = tilt.offsetLeft, T = tilt.offsetTop, cw = tilt.offsetWidth, ch = tilt.offsetHeight;
+    const z = zoom.z;
+    zoom.x = cw * z <= vw ? (vw - cw * z) / 2 - L * z : zclamp(zoom.x, vw - (L + cw) * z, -L * z);
+    zoom.y = ch * z <= vh ? (vh - ch * z) / 2 - T * z : zclamp(zoom.y, vh - (T + ch) * z, -T * z);
+    if (z <= 1.001) { zoom.x = 0; zoom.y = 0; }
+    zoomEl.style.transform = `translate(${zoom.x}px, ${zoom.y}px) scale(${z})`;
+    document.body.classList.toggle('is-zoomed', z > 1.01);
+  }
+  // приблизить так, чтобы точка экрана (px, py) осталась под пальцем/курсором
+  function zoomTo(z, px = innerWidth / 2, py = innerHeight / 2, animate = false) {
+    z = zclamp(z, ZMIN, ZMAX);
+    zoom.x = px - (px - zoom.x) * (z / zoom.z);
+    zoom.y = py - (py - zoom.y) * (z / zoom.z);
+    zoom.z = z;
+    if (z > 1.01) tilt.style.transform = '';
+    zoomEl.classList.toggle('is-anim', animate);
+    zoomFix();
+    if (animate) setTimeout(() => zoomEl.classList.remove('is-anim'), 380);
+  }
+
+  // колёсико мыши и щипок на тачпаде (приходит как wheel с ctrlKey)
+  viewport.addEventListener('wheel', e => {
+    e.preventDefault();
+    const k = e.ctrlKey ? .012 : .0018;
+    zoomTo(zoom.z * Math.exp(-e.deltaY * k), e.clientX, e.clientY);
+  }, { passive: false });
+  // Safari на iOS/macOS: не даём браузеру зумить страницу целиком
+  ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+
+  const pts = new Map();
+  let gesture = null, moved = 0, lastTap = { t: 0, x: 0, y: 0 };
+  const mid = () => { const [a, b] = [...pts.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) }; };
+  function startGesture() {
+    if (pts.size >= 2) {
+      const m = mid();
+      gesture = { type: 'pinch', z0: zoom.z, x0: zoom.x, y0: zoom.y, m0: m };
+    } else if (pts.size === 1) {
+      const p = [...pts.values()][0];
+      gesture = { type: 'pan', x0: zoom.x, y0: zoom.y, p0: { ...p } };
+    } else gesture = null;
+  }
+  // браузер не должен утаскивать картинки как файлы — иначе перетаскивание не работает
+  viewport.addEventListener('dragstart', e => e.preventDefault());
+  viewport.querySelectorAll('img').forEach(im => { im.draggable = false; });
+  viewport.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.pointerType === 'mouse') e.preventDefault(); // без выделения и drag-n-drop
+    try { viewport.setPointerCapture(e.pointerId); } catch {}
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) moved = 0;
+    startGesture();
+  });
+  addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId) || !gesture) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (gesture.type === 'pinch' && pts.size >= 2) {
+      const m = mid(), g = gesture;
+      const z = zclamp(g.z0 * m.d / g.m0.d, ZMIN, ZMAX);
+      // точка между пальцами «прилипает» к контенту и едет вместе с ними
+      zoom.x = m.x - (g.m0.x - g.x0) * (z / g.z0);
+      zoom.y = m.y - (g.m0.y - g.y0) * (z / g.z0);
+      zoom.z = z;
+      moved = 99;
+      tilt.style.transform = '';
+      zoomFix();
+    } else if (gesture.type === 'pan') {
+      const p = pts.get(e.pointerId), g = gesture;
+      moved = Math.max(moved, Math.hypot(p.x - g.p0.x, p.y - g.p0.y));
+      if (zoom.z > 1.01) {
+        zoom.x = g.x0 + (p.x - g.p0.x);
+        zoom.y = g.y0 + (p.y - g.p0.y);
+        document.body.classList.add('is-panning');
+        zoomFix();
+      }
+    }
+  });
+  function endPointer(e) {
+    if (!pts.has(e.pointerId)) return;
+    const p = pts.get(e.pointerId);
+    pts.delete(e.pointerId);
+    document.body.classList.remove('is-panning');
+    // двойной тап/клик: приблизить в 2.5 раза в этой точке или вернуть как было
+    if (pts.size === 0 && moved < 8 && e.type === 'pointerup') {
+      const now = performance.now();
+      if (now - lastTap.t < 320 && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 30) {
+        zoom.z > 1.2 ? zoomTo(1, p.x, p.y, true) : zoomTo(2.5, p.x, p.y, true);
+        lastTap.t = 0;
+      } else lastTap = { t: now, x: p.x, y: p.y };
+    }
+    startGesture();
+  }
+  addEventListener('pointerup', endPointer);
+  addEventListener('pointercancel', endPointer);
+
+  document.querySelector('.zoom-ui').addEventListener('click', e => {
+    const b = e.target.closest('[data-zoom]');
+    if (!b) return;
+    const k = b.dataset.zoom;
+    if (k === 'in') zoomTo(zoom.z * 1.5, undefined, undefined, true);
+    else if (k === 'out') zoomTo(zoom.z / 1.5, undefined, undefined, true);
+    else zoomTo(1, undefined, undefined, true);
+  });
+  addEventListener('keydown', e => {
+    if (e.key === '+' || e.key === '=') zoomTo(zoom.z * 1.5, undefined, undefined, true);
+    else if (e.key === '-' || e.key === '_') zoomTo(zoom.z / 1.5, undefined, undefined, true);
+    else if (e.key === '0' || e.key === 'Escape') zoomTo(1, undefined, undefined, true);
+  });
 
   /* ---------- Гироскоп на телефоне ---------- */
   // Положение телефона в первый момент считаем «ровным», наклон — относительно него.
@@ -365,9 +484,10 @@
     requestAnimationFrame(frame);
   }
 
-  tilt.addEventListener('click', e => {
+  viewport.addEventListener('click', e => {
+    if (moved > 8) return; // это было перетаскивание, а не тап
     const r = stage.getBoundingClientRect();
-    const s = parseFloat(getComputedStyle(root).getPropertyValue('--s')) || 1;
+    const s = r.width / W; // учитывает и подгонку под экран, и зум
     burst((e.clientX - r.left) / s, (e.clientY - r.top) / s);
     document.querySelector('.hint')?.remove();
     askGyro();

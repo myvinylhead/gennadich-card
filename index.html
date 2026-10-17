@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>С Днём Рождения, Геннадич!</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,6 +27,7 @@
   </div>
 
   <div id="viewport">
+   <div id="zoom">
     <div id="tilt">
       <div id="stage">
         <img class="bg" data-src="assets/bg.png" alt="">
@@ -170,8 +171,16 @@
 
       </div>
     </div>
+   </div>
   </div>
-  <div class="hint">тапни по открытке ✦</div>
+
+  <!-- зум: кнопки дублируют щипок, колёсико и двойной тап -->
+  <div class="zoom-ui" aria-label="Масштаб">
+    <button type="button" data-zoom="in" aria-label="Приблизить">+</button>
+    <button type="button" data-zoom="out" aria-label="Отдалить">−</button>
+    <button type="button" data-zoom="reset" aria-label="Показать целиком">⤢</button>
+  </div>
+  <div class="hint">тап — конфетти ✦ двойной тап или щипок — зум</div>
   <script src="script.js"></script>
 </body>
 </html>

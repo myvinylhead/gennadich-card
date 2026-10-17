@@ -20,10 +20,21 @@ html, body {
 #viewport {
   position: fixed;
   inset: 0;
+  overflow: hidden;
+  touch-action: none; /* щипок и перетаскивание обрабатываем сами */
+}
+#zoom {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   perspective: 1600px;
+  transform-origin: 0 0;
+  will-change: transform;
 }
+#zoom.is-anim { transition: transform .35s cubic-bezier(.2,.8,.3,1); }
+body.is-zoomed #tilt { cursor: grab; }
+body.is-panning #tilt { cursor: grabbing; }
 
 #tilt {
   width: calc(1024px * var(--s, 1));
@@ -48,6 +59,7 @@ html, body {
 }
 
 .bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#stage img { -webkit-user-drag: none; user-drag: none; -webkit-touch-callout: none; pointer-events: none; }
 
 canvas { position: absolute; inset: 0; width: 1024px; height: 1536px; pointer-events: none; }
 
@@ -600,7 +612,7 @@ body.show-ref .panel__title, body.show-ref .panel__text, body.show-ref .wish spa
 /* ---------- Прелоадер ---------- */
 /* пока грузимся, открытка уже отрисована под прелоадером (так фон успевает декодироваться),
    но все её анимации стоят на паузе и стартуют с нуля после показа */
-body.loading .hint { display: none; }
+body.loading .hint, body.loading .zoom-ui { display: none; }
 body.loading #stage *, body.loading #stage *::before, body.loading #stage *::after { animation-play-state: paused !important; }
 
 #loader {
@@ -689,3 +701,32 @@ body.loading #stage *, body.loading #stage *::before, body.loading #stage *::aft
   color: rgba(236,231,220,.6);
 }
 #loaderPct { color: var(--green); text-shadow: 0 0 6px rgba(109,255,138,.6); }
+
+/* ---------- Кнопки зума ---------- */
+.zoom-ui {
+  position: fixed;
+  right: 14px;
+  bottom: 34px;
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+}
+.zoom-ui button {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid rgba(255,154,46,.75);
+  border-radius: 8px;
+  background: rgba(10,14,22,.82);
+  color: var(--orange-hot);
+  font: 700 20px/1 "JetBrains Mono", ui-monospace, monospace;
+  box-shadow: 0 0 14px rgba(255,140,30,.25);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+          backdrop-filter: blur(4px);
+  transition: background .15s, transform .1s;
+}
+.zoom-ui button:hover { background: rgba(40,26,14,.9); }
+.zoom-ui button:active { transform: scale(.94); }
+.zoom-ui button:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
+.zoom-ui [data-zoom="reset"] { font-size: 17px; }
+body:not(.is-zoomed) .zoom-ui [data-zoom="reset"] { opacity: .45; }
