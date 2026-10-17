@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>С Днём Рождения, Геннадич!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto+Condensed:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="viewport">
+    <div id="tilt">
+      <div id="stage">
+        <img class="bg" src="assets/bg.png" alt="">
+
+        <!-- космос: звёзды и метеоры -->
+        <canvas id="space"></canvas>
+
+        <!-- свечение Claude-звёздочек -->
+        <span class="glow glow--robot"></span>
+        <span class="glow glow--paper"></span>
+        <span class="glow glow--flag"></span>
+        <span class="glow glow--lens"></span>
+        <span class="glow glow--invader"></span>
+
+        <!-- сканирующий свет по панелям -->
+        <div class="scan" style="--sd:-0.0s;left:22px;top:250px;width:250px;height:175px"></div>
+        <div class="scan" style="--sd:-1.2s;left:18px;top:438px;width:248px;height:180px"></div>
+        <div class="scan" style="--sd:-2.4s;left:18px;top:652px;width:248px;height:178px"></div>
+        <div class="scan" style="--sd:-3.6s;left:752px;top:250px;width:248px;height:180px"></div>
+        <div class="scan" style="--sd:-4.8s;left:758px;top:440px;width:244px;height:180px"></div>
+        <div class="scan" style="--sd:-6.0s;left:762px;top:652px;width:240px;height:186px"></div>
+
+        <!-- ЛЕВЫЕ ПАНЕЛИ -->
+        <section class="panel panel--l" style="--d:.9s">
+          <h2 class="panel__title" style="left:111px;top:276px;rotate:8deg">Стратегия</h2>
+          <p class="panel__text" style="left:33px;top:323px;width:152px">Думает на&nbsp;пять ходов вперёд, пока другие открывают тикет.</p>
+        </section>
+
+        <section class="panel panel--l" style="--d:1.2s">
+          <h2 class="panel__title" style="left:105px;top:452px;font-size:21px;rotate:5deg">Браузер-фёрст</h2>
+          <p class="panel__text" style="left:27px;top:497px;width:168px">Пока все обсуждают идею, у&nbsp;Геннадича она уже в&nbsp;браузере.</p>
+        </section>
+
+        <section class="panel panel--l" style="--d:1.5s">
+          <h2 class="panel__title" style="left:112px;top:655px">Агентовод</h2>
+          <p class="panel__text" style="left:127px;top:702px;width:178px;rotate:3deg">Клод слушается<br>с&nbsp;полуслова<br>и&nbsp;отрабатывает<br>каждый токен.</p>
+        </section>
+
+        <!-- ПРАВЫЕ ПАНЕЛИ -->
+        <section class="panel panel--r" style="--d:1.05s">
+          <h2 class="panel__title" style="left:850px;top:288px;rotate:-7deg">Новатор</h2>
+          <p class="panel__text" style="left:783px;top:353px;width:165px">Сегодня&nbsp;— эксперимент, завтра&nbsp;— рабочий инструмент.</p>
+        </section>
+
+        <section class="panel panel--r" style="--d:1.35s">
+          <h2 class="panel__title" style="left:850px;top:457px;rotate:-7deg">Дизтехи</h2>
+          <p class="panel__text" style="left:783px;top:526px;width:195px">Прокачивает команду<br>вместе с&nbsp;Санярой&nbsp;—<br>с&nbsp;заботой о&nbsp;каждом<br>и&nbsp;без выгорания.</p>
+        </section>
+
+        <section class="panel panel--r" style="--d:1.65s">
+          <h2 class="panel__title" style="left:862px;top:664px">DOS Zone</h2>
+          <p class="panel__text" style="left:785px;top:724px;width:170px">Возвращает древние<br>игры к&nbsp;жизни прямо<br>в&nbsp;браузере.</p>
+        </section>
+
+        <!-- центральный терминал -->
+        <div class="term" id="term">
+          <div class="term__head" data-type="CLAUD-MECH // PILOT: ГЕННАДИЧ"></div>
+          <div class="term__line" data-type="> СОСТОЯНИЕ СИСТЕМЫ: БОЕВОЕ"></div>
+          <div class="term__line" data-type="> КОНТЕКСТ: РАСШИРЕН"></div>
+          <div class="term__line" data-type="> АГЕНТЫ: ПОД КОНТРОЛЕМ"></div>
+          <div class="term__line" data-type="> ЛИМИТЫ: ПОКА ЕСТЬ"></div>
+        </div>
+        <div class="term-bars">
+          <i></i><i></i><i></i><i></i>
+        </div>
+
+        <!-- маленькие экраны -->
+        <div class="cc">
+          <div class="cc__title">Claude Code</div>
+          <div class="cc__step">&gt; Plan</div>
+          <div class="cc__step">&gt; Implement</div>
+          <div class="cc__step">&gt; Test</div>
+          <div class="cc__step">&gt; Deploy</div>
+          <div class="cc__step">&gt; Repeat</div>
+        </div>
+
+        <div class="tokens-label">TOKENS</div>
+        <div class="tokens-burn"></div>
+
+        <div class="agents-label">AGENTS</div>
+        <span class="agent-ping" style="top:975px;--pd:0s"></span>
+        <span class="agent-ping" style="top:1004px;--pd:1s"></span>
+        <span class="agent-ping" style="top:1032px;--pd:2s"></span>
+        <span class="agent-ping" style="top:1059px;--pd:3s"></span>
+
+        <div class="idea">Отличная идея!</div>
+
+        <div class="dos">
+          <div class="dos__title">DOS ZONE</div>
+          <div class="dos__score">SCORE <span id="score">001337</span></div>
+        </div>
+
+        <!-- пар над кружкой -->
+        <div class="steam"><i></i><i></i><i></i></div>
+
+        <!-- кот спит -->
+        <div class="zzz"><i>z</i><i>z</i><i>Z</i></div>
+
+        <!-- сердечки у робота -->
+        <div class="hearts"><i>♥</i><i>♥</i><i>♥</i></div>
+
+        <!-- нижнее поздравление -->
+        <div class="wish">
+          <p>
+            <span>Пусть архитектура сходится с&nbsp;первого раза,</span>
+            <span>нейросети понимают задачу без пятого уточнения,</span>
+            <span>браузер выдерживает даже самые безумные твои идеи,</span>
+            <span>а&nbsp;каждый новый проект оказывается ещё интереснее предыдущего.</span>
+          </p>
+          <p>
+            <span>Больше мощных идей, сильных технологий, крутых людей рядом</span>
+            <span>и&nbsp;времени на&nbsp;всё то, что хочется делать просто потому, что это кайф.</span>
+          </p>
+        </div>
+
+        <!-- нижняя плашка -->
+        <div class="ticker">
+          <div class="ticker__words">
+            <b>Стратегия</b><em>•</em><b>Браузер-фёрст</b><em>•</em><b>Агентовод</b><em>•</em><b>Новатор</b><em>•</em><b>Дизтехи</b><em>•</em><b>DOS Zone</b>
+          </div>
+          <div class="ticker__motto">Ты строишь будущее, а мы рядом&nbsp;— на&nbsp;подхвате!<span class="cursor">_</span></div>
+        </div>
+        <div class="laser"></div>
+        <div class="boom"></div>
+
+        <!-- логотип -->
+        <div class="logo">
+          <div class="logo__float">
+            <img src="assets/logo.png" alt="С Днём Рождения, Геннадич!">
+            <div class="logo__shine"></div>
+            <span class="sparkle" style="left:712px;top:30px"></span>
+            <span class="sparkle sparkle--late" style="left:735px;top:18px"></span>
+            <div class="logo__sub">Геннадич&nbsp;— <span id="sub">технолидер нового поколения</span><span class="cursor">|</span></div>
+          </div>
+        </div>
+
+        <!-- угольки/частицы поверх всего -->
+        <canvas id="embers"></canvas>
+        <div class="glare"></div>
+        <div class="crt"></div>
+
+      </div>
+    </div>
+  </div>
+  <div class="hint">тапни по открытке ✦</div>
+  <script src="script.js"></script>
+</body>
+</html>
