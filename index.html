@@ -9,11 +9,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto+Condensed:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="loading">
+  <!-- прелоадер: показываем, пока не скачаются картинки и шрифты -->
+  <div id="loader" role="status" aria-live="polite">
+    <div class="loader__box">
+      <div class="loader__head">CLAUD-MECH // ЗАГРУЗКА ПОЗДРАВЛЕНИЯ</div>
+      <div class="loader__row">
+        <span class="loader__spin" id="loaderSpin">✻</span>
+        <span class="loader__msg" id="loaderMsg">Прогреваю реактор меха…</span>
+      </div>
+      <div class="loader__bar"><i id="loaderBar"></i></div>
+      <div class="loader__foot">
+        <span id="loaderPct">0%</span>
+        <span>пилот: Геннадич</span>
+      </div>
+    </div>
+  </div>
+
   <div id="viewport">
     <div id="tilt">
       <div id="stage">
-        <img class="bg" src="assets/bg.png" alt="">
+        <img class="bg" data-src="assets/bg.png" alt="">
 
         <!-- космос: звёзды и метеоры -->
         <canvas id="space"></canvas>
@@ -139,7 +155,7 @@
         <!-- логотип -->
         <div class="logo">
           <div class="logo__float">
-            <img src="assets/logo.png" alt="С Днём Рождения, Геннадич!">
+            <img data-src="assets/logo.png" alt="С Днём Рождения, Геннадич!">
             <div class="logo__shine"></div>
             <span class="sparkle" style="left:712px;top:30px"></span>
             <span class="sparkle sparkle--late" style="left:735px;top:18px"></span>

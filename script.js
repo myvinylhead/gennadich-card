@@ -13,8 +13,110 @@
   if (debug && !qs.has('noref')) {
     const ref = new Image();
     ref.className = 'ref';
-    ref.src = 'assets/ref.png';
+    ref.src = 'ref.png';
     stage.appendChild(ref);
+  }
+
+  /* ---------- Прелоадер ---------- */
+  const loaderMsgs = [
+    'Дискомбобулирую поздравление…',
+    'Прогреваю реактор меха…',
+    'Будим кота. Аккуратно…',
+    'Уговариваю Клода выйти на смену…',
+    'Раздуваю контекст до неприличия…',
+    'Сдуваю пыль с дискет DOS…',
+    'Кормлю агентов токенами…',
+    'Провожу гриллинг пожеланий…',
+    'Синхронизируюсь с Санярой…',
+    'Вайбкожу торт…',
+    'Калибрую конфетти…',
+    'Вставляю картридж до щелчка…',
+    'Собираю архитектуру с первого раза…',
+    'Геннадичизирую интерфейс…',
+    'Зажигаю свечи. Тушу пожарную тревогу…',
+    'Ищу, куда Клод положил шарики…',
+    'Деплою праздник в прод…',
+    'Перевожу тикет «поздравить» в In Progress…',
+  ];
+  const spinFrames = ['·', '✢', '✳', '✶', '✻', '✽', '✻', '✶', '✳', '✢'];
+
+  function runLoader() {
+    const box = document.getElementById('loader');
+    const msgEl = document.getElementById('loaderMsg');
+    const spinEl = document.getElementById('loaderSpin');
+    const barEl = document.getElementById('loaderBar');
+    const pctEl = document.getElementById('loaderPct');
+
+    // фразы — в случайном порядке без повторов
+    const order = loaderMsgs.map((m, i) => [Math.random(), m]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+    let mi = 0;
+    const showMsg = text => { msgEl.textContent = text; msgEl.classList.remove('is-in'); void msgEl.offsetWidth; msgEl.classList.add('is-in'); };
+    showMsg(order[mi]);
+    const msgTimer = setInterval(() => showMsg(order[++mi % order.length]), 1300);
+    let fi = 0;
+    const spinTimer = setInterval(() => { spinEl.textContent = spinFrames[fi++ % spinFrames.length]; }, 110);
+
+    // прогресс: картинки по байтам, шрифты — фиксированной долей
+    const imgs = [...document.querySelectorAll('img[data-src]')];
+    const sizes = { 'assets/bg.png': 832000, 'assets/logo.png': 78000 }; // если сервер не скажет размер
+    const FONT_SHARE = .12;
+    const got = imgs.map(() => 0), total = imgs.map(im => sizes[im.dataset.src] || 100000);
+    let fontsDone = false, target = 0, shown = 0;
+    const recalc = () => {
+      const bytes = got.reduce((a, b) => a + b, 0) / total.reduce((a, b) => a + b, 0);
+      target = Math.min(1, bytes) * (1 - FONT_SHARE) + (fontsDone ? FONT_SHARE : 0);
+    };
+    // таймер, а не requestAnimationFrame: так прогресс идёт и в фоновой вкладке
+    const barTimer = setInterval(() => {
+      shown += (target - shown) * .18;
+      const p = Math.round(shown * 100);
+      barEl.style.width = p + '%';
+      pctEl.textContent = p + '%';
+    }, 50);
+
+    async function loadImg(im, i) {
+      const src = im.dataset.src;
+      try {
+        const res = await fetch(src);
+        if (!res.ok || !res.body) throw new Error('no stream');
+        const len = +res.headers.get('content-length');
+        if (len) total[i] = len;
+        const reader = res.body.getReader(), parts = [];
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          parts.push(value); got[i] += value.length; recalc();
+        }
+        im.src = URL.createObjectURL(new Blob(parts, { type: 'image/png' }));
+      } catch {
+        im.src = src; // например, открыто как файл — грузим обычным способом
+      }
+      const ready = im.decode ? im.decode().catch(() => {}) : new Promise(r => { im.onload = im.onerror = r; });
+      await Promise.race([ready, sleep(3000)]); // decode может ждать отрисовки — не зависаем на нём
+      got[i] = total[i]; recalc();
+    }
+    const fonts = document.fonts
+      ? Promise.all(['700 20px Oswald', '500 20px Oswald', '500 16px "Roboto Condensed"', '700 16px "Roboto Condensed"', '500 12px "JetBrains Mono"', '700 12px "JetBrains Mono"']
+          .map(f => document.fonts.load(f, 'АБВ abc'))).catch(() => {})
+      : Promise.resolve();
+    fonts.then(() => { fontsDone = true; recalc(); });
+
+    const loaded = Promise.all([...imgs.map(loadImg), fonts]);
+    const minTime = sleep(1800);                 // чтобы успеть прочитать шутку
+    const maxTime = sleep(20000);                // если сеть совсем плохая — показываем как есть
+    return Promise.race([Promise.all([loaded, minTime]), maxTime]).then(async () => {
+      target = 1;
+      clearInterval(msgTimer);
+      showMsg('Поздравление собрано с\u00a0первого\u00a0раза\u00a0✓');
+      await sleep(650);
+      clearInterval(spinTimer);
+      clearInterval(barTimer);
+      barEl.style.width = '100%';
+      pctEl.textContent = '100%';
+      box.classList.add('is-done');
+      document.body.classList.remove('loading');
+      setTimeout(() => box.remove(), 600);
+    });
   }
 
   /* ---------- Масштаб под экран ---------- */
@@ -260,12 +362,16 @@
     askGyro();
   });
 
-  if (!reduced) {
-    requestAnimationFrame(frame);
-    subLoop();
-    termLoop();
-    setTimeout(() => { burst(W * .3, 180); burst(W * .7, 180); }, 1300);
-  } else {
-    termRows.forEach(r => r.textContent = r.dataset.type);
-  }
+  // открытка показывается и анимации стартуют только после загрузки
+  runLoader().then(() => {
+    fit();
+    if (!reduced) {
+      requestAnimationFrame(frame);
+      subLoop();
+      termLoop();
+      setTimeout(() => { burst(W * .3, 180); burst(W * .7, 180); }, 1300);
+    } else {
+      termRows.forEach(r => r.textContent = r.dataset.type);
+    }
+  });
 })();
