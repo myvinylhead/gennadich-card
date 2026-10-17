@@ -10,6 +10,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  /* iOS Safari сам увеличивает текст (особенно в горизонтальной ориентации) — запрещаем */
+  -webkit-text-size-adjust: 100%;
+          text-size-adjust: 100%;
+}
 html, body {
   height: 100%;
   background: radial-gradient(ellipse at 50% 40%, #1b1220 0%, var(--night) 70%);
@@ -188,20 +193,14 @@ canvas { position: absolute; inset: 0; width: 1024px; height: 1536px; pointer-ev
   content: "█";
   animation: blink .7s steps(1) infinite;
 }
-.term-bars {
-  position: absolute;
-  left: 632px;
-  top: 818px;
-  display: grid;
-  gap: 11px;
-}
+.term-bars { position: absolute; inset: 0; pointer-events: none; }
 .term-bars i {
+  position: absolute;
   display: block;
-  width: 38px;
-  height: 9px;
+  height: 10px;
   border-radius: 2px;
-  background: #7dff9a;
-  box-shadow: 0 0 10px #57ff7a;
+  background: #b6ffc6;
+  box-shadow: 0 0 8px #57ff7a;
   mix-blend-mode: screen;
   opacity: 0;
   animation: bar 2.4s ease-in-out infinite;
@@ -209,7 +208,7 @@ canvas { position: absolute; inset: 0; width: 1024px; height: 1536px; pointer-ev
 .term-bars i:nth-child(2) { animation-delay: .3s; }
 .term-bars i:nth-child(3) { animation-delay: .6s; }
 .term-bars i:nth-child(4) { animation-delay: .9s; animation-name: barLow; }
-@keyframes bar { 0%,100% { opacity: 0; } 50% { opacity: .55; } }
+@keyframes bar { 0%,100% { opacity: 0; } 50% { opacity: .4; } }
 @keyframes barLow { 0%,100% { opacity: 0; } 20%,24%,60% { opacity: .7; background: #ffcc33; box-shadow: 0 0 10px #ffaa00; } 22% { opacity: 0; } }
 
 @keyframes blink { 50% { opacity: 0; } }
@@ -430,8 +429,8 @@ canvas { position: absolute; inset: 0; width: 1024px; height: 1536px; pointer-ev
 .wish p:nth-child(2) span:nth-child(1) { animation-delay: 3.6s; }
 .wish p:nth-child(2) span:nth-child(2) { animation-delay: 3.9s; }
 @keyframes wishIn {
-  from { opacity: 0; transform: translateY(12px); letter-spacing: 2px; filter: blur(3px); }
-  to   { opacity: 1; transform: none; letter-spacing: normal; filter: none; }
+  from { opacity: 0; transform: translateY(12px); filter: blur(3px); }
+  to   { opacity: 1; transform: none; filter: none; }
 }
 
 /* ---------- Нижняя плашка ---------- */

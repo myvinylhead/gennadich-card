@@ -143,7 +143,7 @@
       tilt.style.transform = `translate(${-(+qs.get('x') || 0) * z}px, ${-(+qs.get('y') || 0) * z}px)`;
     }
   }
-  addEventListener('resize', () => { fit(); zoomFix(); });
+  addEventListener('resize', () => { fit(); zoomFix(); fitLines(); });
   fit();
 
   /* ---------- 3D-наклон и блик за курсором ---------- */
@@ -163,7 +163,7 @@
     document.addEventListener('pointerleave', () => { tilt.style.transform = ''; });
   }
 
-  /* ---------- Зум: щипок, колёсико, двойной тап, перетаскивание ---------- */
+  /* ---------- Зум: щипок, колёсико, кнопки, перетаскивание ---------- */
   const zoomEl = document.getElementById('zoom');
   const viewport = document.getElementById('viewport');
   const ZMIN = 1, ZMAX = 4;
@@ -203,7 +203,7 @@
   ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
 
   const pts = new Map();
-  let gesture = null, moved = 0, lastTap = { t: 0, x: 0, y: 0 };
+  let gesture = null, moved = 0;
   const mid = () => { const [a, b] = [...pts.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) }; };
   function startGesture() {
     if (pts.size >= 2) {
@@ -251,17 +251,8 @@
   });
   function endPointer(e) {
     if (!pts.has(e.pointerId)) return;
-    const p = pts.get(e.pointerId);
     pts.delete(e.pointerId);
     document.body.classList.remove('is-panning');
-    // двойной тап/клик: приблизить в 2.5 раза в этой точке или вернуть как было
-    if (pts.size === 0 && moved < 8 && e.type === 'pointerup') {
-      const now = performance.now();
-      if (now - lastTap.t < 320 && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 30) {
-        zoom.z > 1.2 ? zoomTo(1, p.x, p.y, true) : zoomTo(2.5, p.x, p.y, true);
-        lastTap.t = 0;
-      } else lastTap = { t: now, x: p.x, y: p.y };
-    }
     startGesture();
   }
   addEventListener('pointerup', endPointer);
@@ -493,9 +484,31 @@
     askGyro();
   });
 
+  // страховка: если строка где-то шире своего места (другой шрифт, другой рендер) — ужимаем её
+  function fitLines() {
+    const boxes = [
+      ['.ticker__words', 744], ['.ticker__motto', 744],
+      ...[...document.querySelectorAll('.wish span')].map(el => [el, 744]),
+    ];
+    for (const [sel, max] of boxes) {
+      const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+      if (!el) continue;
+      el.style.scale = '';
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const w = r.getBoundingClientRect().width / (stage.getBoundingClientRect().width / W);
+      if (w > max) {
+        el.style.scale = `${(max / w).toFixed(3)} 1`; // отдельно от transform, чтобы не спорить с анимациями
+      }
+    }
+  }
+
   // открытка показывается и анимации стартуют только после загрузки
   runLoader().then(() => {
     fit();
+    fitLines();
+    document.fonts?.ready.then(fitLines);
+    setTimeout(fitLines, 1500);
     if (!reduced) {
       requestAnimationFrame(frame);
       subLoop();
